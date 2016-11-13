@@ -95,6 +95,25 @@ void Ser::modify_event(int fd, int state)
 void Ser::do_accept()
 {
 	int fd = accept(m_listenfd, nullptr, nullptr);
+	/*
+	struct sockaddr_in addr;
+	socklen_t len = sizeof(addr);
+	bzero(&addr, len);
+	getsockname(m_listenfd, (SA*)&addr, &len);
+	cout << inet_ntoa(addr.sin_addr) << ":" << ntohs(addr.sin_port) << " :: ";
+	
+	bzero(&addr, len);
+	getpeername(m_listenfd, (SA*)&addr, &len);
+	cout << inet_ntoa(addr.sin_addr) << ":" << ntohs(addr.sin_port) << endl;
+	
+	bzero(&addr, len);
+	getsockname(fd, (SA*)&addr, &len);
+	cout << inet_ntoa(addr.sin_addr) << ":" << ntohs(addr.sin_port) << " :: ";
+	bzero(&addr, len);
+	getpeername(fd, (SA*)&addr, &len);
+	cout << inet_ntoa(addr.sin_addr) << ":" << ntohs(addr.sin_port) << endl;
+	//*/
+	
 	if (fd == -1)
 	{
 		cerr << "accept" << endl;
@@ -201,8 +220,15 @@ void Ser::do_conf(const char* filename)
 	{
 		char key[32] = {0};
 		char path[1024] = {0};
-		sscanf(line, "%s=%s\n", key, path);
+		//sscanf(line, "%s=%s\n", key, path);
+		char* p = line;
+		while (*(p++) != '=');
+		p[-1] = '\0';
+		strcpy(key, line);
+		strcpy(path, p);
+
 		upchar(key, sizeof(key));
+		//cout << key << path << endl;
 		if (strcmp(key, "PATH") == 0)
 		{
 			strncpy(confpath, path, sizeof(path));
@@ -213,6 +239,7 @@ void Ser::do_conf(const char* filename)
 		}
 		
 	}
+	return;
 }
 
 void Ser::go()
