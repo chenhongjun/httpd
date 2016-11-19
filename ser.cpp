@@ -122,15 +122,19 @@ void Ser::do_accept()
 	cout << "new fd:" << fd << endl;
 
 	m_connfd.push_back(fd);//添加到已连接队列
-	add_event(fd, EPOLLIN);//添加到epoll监听
+	add_event(fd, EPOLLIN & EPOLLET);//添加到epoll监听
 
 	struct epoll_event ev;
 	bzero(&ev, sizeof(ev));
 	m_epoll_event.push_back(ev);//扩大事件处理队列容量
+
+	thread(&Ser::do_in, *this, fd).detach();//启动线程处理此请求事件
+	
 }
 
 void Ser::do_in(int fd)
 {
+	cout << "do_in" << endl;
 	char head[HEADSIZE];
 	//读报文头
 	if (readline(fd, head, HEADSIZE) == 0)
@@ -206,9 +210,11 @@ void Ser::do_close(int fd)
 	//close()
 	close(fd);
 	//从已连接队列中删除
+	m_connfd.remove(fd);
 	//从epoll中删除
-	//适当减小事件处理容器
+	delete_event(fd, EPOLLIN);
 	//结束当前线程
+	pthread_exit(NULL);
 }
 
 void Ser::do_conf(const char* filename)
@@ -224,6 +230,7 @@ void Ser::do_conf(const char* filename)
 		char* p = line;
 		while (*(p++) != '=');
 		p[-1] = '\0';
+		p[strlen(p)-1] = '\0';//去掉换行符
 		strcpy(key, line);
 		strcpy(path, p);
 
@@ -236,6 +243,7 @@ void Ser::do_conf(const char* filename)
 			{
 				confpath[strlen(confpath)-1] = '\0';
 			}
+			//cout << confpath << endl;
 		}
 		
 	}
@@ -266,17 +274,44 @@ void Ser::go()
 				//thread out(do_out, fd);
 				do_out(fd);*/
 		}
-
+		//适当减小事件处理容器
+		size_t sizelist = m_connfd.size();
+		size_t sizearr = m_epoll_event.size()/2;
+		if ((sizelist > 100) && (sizearr > sizelist))
+			m_epoll_event.resize(sizearr);
 	}
 }
 
 unsigned int Ser::readline(int fd, char* buf, size_t len)
 {
-
-	return 0;
+	unsigned int i = 0;
+	for (i = 0; i < len; ++i)
+	{
+		if (read(fd, buf+i, 1) != 1)
+		{
+			if (errno == EINTR)
+				continue;
+			else return 0;
+		}
+		if (*(buf+i) == '\n' && *(buf+i-1) == '\r')
+		  break;
+	}
+	return i+1;
 }
 unsigned int Ser::writeline(int fd, const char* buf, size_t len)
 {
+	unsigned int i = 0;
+	for (i = 0; i < len; ++i)
+	{
+		if (write(fd, buf+i, 1) != 1)
+		{
+			if (errno == EINTR)
+				continue;
+			else return 0;
+		}
+		if (*(buf+i) == '\n' && *(buf+i-1) == '\r')
+		  break;
+	}
 	return 0;
 }
 unsigned int Ser::readn(int fd, char* buf, size_t len)
@@ -333,10 +368,55 @@ void Ser::downchar(char* buf, size_t len)
 	for (size_t i = 0; i < len; ++i)
 	  *(buf+i) = tolower(*(buf+i));
 }
+unsigned long Ser::get_file_size(const char* path)
+{
+	unsigned long sizefile = -1;
+	struct stat statbuf;
+	if (stat(path, &statbuf) < 0)
+	  return sizefile;
+	else
+	  sizefile = statbuf.st_size;
+	return sizefile;
+}
+
 void Ser::do_get(int fd, const char* uri, size_t len)
 {
 	//解析uri指定的文件及参数
+	
 	//静态文件则发送文件
+	char filepath[1024] = {0};
+	snprintf(filepath, sizeof(filepath), "%s%s", confpath, uri);
+	if (filepath[strlen(filepath)-1] == '/')
+	  strcat(filepath, "demo.html");
+	else return;
+	cout << filepath << endl;
+	writeline(fd, "HTTP/1.1 200 OK\r\n", sizeof("HTTP/1.1 200 OK\r\n"));
+	//writeline(fd, "HTTP/1.1 200 OK\r\n", sizeof("HTTP/1.1 200 OK\r\n"));
+	unsigned long filesize = get_file_size(filepath);
+	char contentlength_buf[128] = {0};
+	sprintf(contentlength_buf, "content-length: %lu", filesize);
+	if (writeline(fd, contentlength_buf, sizeof(contentlength_buf)) == 0)
+	  do_close(fd);
+	if (writeline(fd, "\r\n", sizeof("\r\n")) == 0)
+	  do_close(fd);
+	
+	FILE* pfile = fopen(filepath, "rb");
+	char buf[4096] = {0};
+	int ret = 0;
+	while (1)
+	{
+		ret = fread(buf, sizeof(buf), 1, pfile);
+		if (ret < 0)
+		{
+			if (errno == EINTR)
+			  continue;
+			else do_close(fd);
+		}
+		if (ret == 0)
+		  break;
+		writen(fd, buf, sizeof(buf));
+	}
+	cout << contentlength_buf << endl;
 	//动态请求则执行程序并发送输出
 }
 void Ser::do_post(int fd, const char* uri, size_t urilen, const char* text, size_t textlen)

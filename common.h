@@ -8,7 +8,9 @@
 #include <unistd.h>
 #include <strings.h>
 #include <sys/types.h>
-//#include <pthread.h>
+#include <sys/stat.h>
+#include <pthread.h>
+
 //C
 #include <stdio.h>
 #include <stdlib.h>
