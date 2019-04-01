@@ -30,7 +30,7 @@
 //#include <atomic>
 using namespace std;
 
-//³£ÓÃ³£Á¿
+//å¸¸ç”¨å¸¸é‡
 #define LOCAL_IP "119.29.4.18"
 #define LOCALHOST_NAME "www.cppserver.cn"
 #define SER_PORT 80
@@ -39,12 +39,12 @@ using namespace std;
 #define HEADSIZE 1024
 #define BODYSIZE 1024
 
-//ºêº¯Êı
+//å®å‡½æ•°
 #define ERR_EXIT(str) do {\
 		cerr << str << endl;\
 		exit(-1);\
 } while (0)
-//ÖØÃüÃû½á¹¹Ìå
+//é‡å‘½åç»“æ„ä½“
 typedef struct sockaddr SA;
 
 

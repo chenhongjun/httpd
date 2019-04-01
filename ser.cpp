@@ -128,20 +128,20 @@ void Ser::do_accept()
 	}
 	cout << "new fd:" << fd << endl;
 
-	m_connfd.push_back(fd);//Ìí¼Óµ½ÒÑÁ¬½Ó¶ÓÁĞ
-	add_event(fd, EPOLLIN);//Ìí¼Óµ½epoll¼àÌı
+	m_connfd.push_back(fd);//æ·»åŠ åˆ°å·²è¿æ¥é˜Ÿåˆ—
+	add_event(fd, EPOLLIN);//æ·»åŠ åˆ°epollç›‘å¬
 
 	struct epoll_event ev;
 	bzero(&ev, sizeof(ev));
-	m_epoll_event.push_back(ev);//À©´óÊÂ¼ş´¦Àí¶ÓÁĞÈİÁ¿
+	m_epoll_event.push_back(ev);//æ‰©å¤§äº‹ä»¶å¤„ç†é˜Ÿåˆ—å®¹é‡
 
-	//do_in(fd);//Æô¶¯Ïß³Ì´¦Àí´ËÇëÇóÊÂ¼ş
+	//do_in(fd);//å¯åŠ¨çº¿ç¨‹å¤„ç†æ­¤è¯·æ±‚äº‹ä»¶
 }
 
 void Ser::do_in(int fd)
 {
 	char head[HEADSIZE];
-	//¶Á±¨ÎÄÍ·
+	//è¯»æŠ¥æ–‡å¤´
 	int headlen;
 	if ((headlen = readline(fd, head, HEADSIZE)) == 0)
 	{
@@ -149,8 +149,8 @@ void Ser::do_in(int fd)
 		return;
 	}
 	head[headlen] = 0;
-	//read·µ»Ø0ÔòÁ´½Ó¶Ï¿ª,´¦ÀíÒÑÁ´½ÓÁĞ±í£¬´¦Àíepoll¼àÌı¶ÓÁĞ,¼õĞ¡Êı×é´óĞ¡
-	//½âÎö´æ´¢
+	//readè¿”å›0åˆ™é“¾æ¥æ–­å¼€,å¤„ç†å·²é“¾æ¥åˆ—è¡¨ï¼Œå¤„ç†epollç›‘å¬é˜Ÿåˆ—,å‡å°æ•°ç»„å¤§å°
+	//è§£æå­˜å‚¨
 	char way[16] = {0};
 	char uri[1024] = {0};
 	char version[16] = {0};
@@ -158,15 +158,15 @@ void Ser::do_in(int fd)
 	cout << head;
 
 	sscanf(head, "%s %s %s\r\n", way, uri, version);
-	upchar(way, sizeof(way));//Í³Ò»´óĞ¡Ğ´
+	upchar(way, sizeof(way));//ç»Ÿä¸€å¤§å°å†™
 	downchar(uri, sizeof(uri));
 	upchar(version, sizeof(version));
 
-	if (strcmp(way, "GET") == 0)//get·½·¨ÇëÇó
+	if (strcmp(way, "GET") == 0)//getæ–¹æ³•è¯·æ±‚
 	{
 		int ret;
 		char bodybuf[BODYSIZE] = {0};
-		while (1)//Ö±µ½ÇëÇóÍ·½áÊø
+		while (1)//ç›´åˆ°è¯·æ±‚å¤´ç»“æŸ
 		{
 			ret = readline(fd, bodybuf, BODYSIZE);
 			if (ret == 0)
@@ -179,16 +179,16 @@ void Ser::do_in(int fd)
 			//cout << bodybuf;
 			bzero(bodybuf, BODYSIZE);
 		}
-		do_get(fd, uri, sizeof(uri));//½âÎöÊı¾İ²¢Íê³É·¢ËÍÈÎÎñ
+		do_get(fd, uri, sizeof(uri));//è§£ææ•°æ®å¹¶å®Œæˆå‘é€ä»»åŠ¡
 	}
-	else if (strcmp(way, "POST") == 0)//post·½·¨ÇëÇó
+	else if (strcmp(way, "POST") == 0)//postæ–¹æ³•è¯·æ±‚
 	{
 		char bodybuf[BODYSIZE] = {0};
 		char keybuf[32] = {0};
 		char valuebuf[512] = {0};
 		size_t textlen = 0;
 		int ret;
-		while (1)//Ö±µ½ÇëÇóÍ·½áÊø
+		while (1)//ç›´åˆ°è¯·æ±‚å¤´ç»“æŸ
 		{
 			ret = readline(fd, bodybuf, BODYSIZE);
 			if (ret == 0)
@@ -201,27 +201,27 @@ void Ser::do_in(int fd)
 		
 			cout << bodybuf;
 
-			downchar(bodybuf, BODYSIZE);//Í³Ò»×ªÎªĞ¡Ğ´
+			downchar(bodybuf, BODYSIZE);//ç»Ÿä¸€è½¬ä¸ºå°å†™
 			bzero(keybuf, sizeof(keybuf));
 			bzero(valuebuf, sizeof(valuebuf));
-			sscanf(bodybuf, "%s: %s\r\n", keybuf, valuebuf);//·Ö½â¼üÖµ¶Ô
+			sscanf(bodybuf, "%s: %s\r\n", keybuf, valuebuf);//åˆ†è§£é”®å€¼å¯¹
 			if (strcmp(keybuf, "content-length") == 0)
 			{
-				sscanf(valuebuf, "%lu", &textlen);//¶ÁÈ¡ÎÄ±¾³¤¶È
+				sscanf(valuebuf, "%lu", &textlen);//è¯»å–æ–‡æœ¬é•¿åº¦
 			}
 			bzero(bodybuf, BODYSIZE);
 		}
 
 		char *ptext = new char[textlen+1];
 		bzero(ptext, textlen+1);
-		if (readn(fd, ptext, textlen) == 0)//¶ÁÈ¡ÎÄ±¾
+		if (readn(fd, ptext, textlen) == 0)//è¯»å–æ–‡æœ¬
 		{
 			delete[] ptext;
 			do_close(fd);
 			return;
 		}
 		ptext[textlen] = '\0';
-		do_post(fd, uri, sizeof(uri), ptext, textlen+1);//½âÎöÊı¾İ²¢Íê³É·¢ËÍÈÎÎñ
+		do_post(fd, uri, sizeof(uri), ptext, textlen+1);//è§£ææ•°æ®å¹¶å®Œæˆå‘é€ä»»åŠ¡
 		delete[] ptext;
 	}
 	return;
@@ -232,11 +232,11 @@ void Ser::do_close(int fd)
 	//close()
 	close(fd);
 	cout << "close fd:" << fd << endl;
-	//´ÓÒÑÁ¬½Ó¶ÓÁĞÖĞÉ¾³ı
+	//ä»å·²è¿æ¥é˜Ÿåˆ—ä¸­åˆ é™¤
 	m_connfd.remove(fd);
-	//´ÓepollÖĞÉ¾³ı
+	//ä»epollä¸­åˆ é™¤
 	delete_event(fd, EPOLLIN);
-	//½áÊøµ±Ç°Ïß³Ì
+	//ç»“æŸå½“å‰çº¿ç¨‹
 	//pthread_exit(NULL);
 	
 }
@@ -254,7 +254,7 @@ void Ser::do_conf(const char* filename)
 		char* p = line;
 		while (*(p++) != '=');
 		p[-1] = '\0';
-		p[strlen(p)-1] = '\0';//È¥µô»»ĞĞ·û
+		p[strlen(p)-1] = '\0';//å»æ‰æ¢è¡Œç¬¦
 		strcpy(key, line);
 		strcpy(path, p);
 
@@ -263,7 +263,7 @@ void Ser::do_conf(const char* filename)
 		if (strcmp(key, "PATH") == 0)
 		{
 			strncpy(confpath, path, sizeof(path));
-			if (confpath[strlen(confpath)-1] == '/')//È¥µôºó×º/
+			if (confpath[strlen(confpath)-1] == '/')//å»æ‰åç¼€/
 			{
 				confpath[strlen(confpath)-1] = '\0';
 			}
@@ -276,7 +276,7 @@ void Ser::do_conf(const char* filename)
 
 void Ser::go()
 {
-	do_conf("./.httpd.conf");//´ÓÅäÖÃÎÄş ¼ÓÔØÅäÖÃÏî
+	do_conf("./.httpd.conf");//ä»é…ç½®æ–‡ï¿½ åŠ è½½é…ç½®é¡¹
 	//cout << "confpath:" << confpath << endl;
 	while (1)
 	{
@@ -289,18 +289,18 @@ void Ser::go()
 			if ((fd == m_listenfd) && (event & EPOLLIN))
 			{
 				do_accept();
-				//thread(&Ser::do_accept, *this).detach();//Æô¶¯·ÖÀëµÄÎŞÃûÏß³Ì´¦ÀíĞÂÁ¬½Ó
+				//thread(&Ser::do_accept, *this).detach();//å¯åŠ¨åˆ†ç¦»çš„æ— åçº¿ç¨‹å¤„ç†æ–°è¿æ¥
 			}
 			else if (event & EPOLLIN)
 			{
 				do_in(fd);
-				//thread(&Ser::do_in, *this, fd).detach();//Æô¶¯Ïß³Ì´¦Àí´ËÇëÇóÊÂ¼ş
+				//thread(&Ser::do_in, *this, fd).detach();//å¯åŠ¨çº¿ç¨‹å¤„ç†æ­¤è¯·æ±‚äº‹ä»¶
 			}
 			/*else if (event & EPOLLOUT)
 				//thread out(do_out, fd);
 				do_out(fd);*/
 		}
-		//ÊÊµ±¼õĞ¡ÊÂ¼ş´¦ÀíÈİÆ÷
+		//é€‚å½“å‡å°äº‹ä»¶å¤„ç†å®¹å™¨
 		size_t sizelist = m_connfd.size();
 		size_t sizearr = m_epoll_event.size()/2;
 		if ((sizelist > 100) && (sizearr > sizelist))
@@ -351,13 +351,13 @@ unsigned int Ser::readn(int fd, char* buf, size_t len)
 	int ret = 0;
 	while (ward)
 	{
-		do {//ÖĞ¶Ï»Ö¸´
+		do {//ä¸­æ–­æ¢å¤
 			ret = read(fd, now, ward);
 		} while ((ret == -1) && (errno == EINTR));
 		
 		if (ret == -1)
 		  ERR_EXIT("readn");
-		else if (ret == 0)//Á¬½ÓÖĞ¶ÏÔÙÒ²Ã»ÓĞÊı¾İ
+		else if (ret == 0)//è¿æ¥ä¸­æ–­å†ä¹Ÿæ²¡æœ‰æ•°æ®
 		  return 0;
 		
 		now += ret;
@@ -410,9 +410,9 @@ unsigned long Ser::get_file_size(const char* path)
 
 void Ser::do_get(int fd, const char* uri, size_t len)
 {
-	//½âÎöuriÖ¸¶¨µÄÎÄ¼ş¼°²ÎÊı
+	//è§£æuriæŒ‡å®šçš„æ–‡ä»¶åŠå‚æ•°
 	//cout << "do_get" << endl;
-	//¾²Ì¬ÎÄ¼şÔò·¢ËÍÎÄ¼ş
+	//é™æ€æ–‡ä»¶åˆ™å‘é€æ–‡ä»¶
 	char filepath[1024] = {0};
 	snprintf(filepath, sizeof(filepath), "%s%s", confpath, uri);
 	if (filepath[strlen(filepath)-1] == '/')
@@ -466,12 +466,12 @@ void Ser::do_get(int fd, const char* uri, size_t len)
 		}
 		
 	}
-	//¶¯Ì¬ÇëÇóÔòÖ´ĞĞ³ÌĞò²¢·¢ËÍÊä³ö
+	//åŠ¨æ€è¯·æ±‚åˆ™æ‰§è¡Œç¨‹åºå¹¶å‘é€è¾“å‡º
 }
 void Ser::do_post(int fd, const char* uri, size_t urilen, const char* text, size_t textlen)
 {
 	cout << "do_post" << endl;
-	//½âÎöuri
-	//½âÎöÊ¹ÓÃtext±¨ÎÄÌå
-	//·¢ËÍÏàÓ¦ÄÚÈİ
+	//è§£æuri
+	//è§£æä½¿ç”¨textæŠ¥æ–‡ä½“
+	//å‘é€ç›¸åº”å†…å®¹
 }

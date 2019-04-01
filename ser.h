@@ -2,48 +2,48 @@
 
 
 class Ser {
-		//friend void do_accept(Ser& ser);//ÓĞĞÂÁ¬½Ó½øÈëÊ±µ÷ÓÃ
-		//friend void do_in(Ser& ser, int fd);//ÓĞ¿É¶ÁÊÂ¼ş·¢ÉúÊ±
+		//friend void do_accept(Ser& ser);//æœ‰æ–°è¿æ¥è¿›å…¥æ—¶è°ƒç”¨
+		//friend void do_in(Ser& ser, int fd);//æœ‰å¯è¯»äº‹ä»¶å‘ç”Ÿæ—¶
 	public:
 		Ser();
 		Ser(const char* ip, unsigned int port);
 		~Ser() {}
 	public:
 		void go();
-		int wait_event();//¼àÌıÒ»´ÎËùÓĞÌ×½Ó¿Ú
-		void do_accept();//ÓĞĞÂÁ¬½Ó½øÈëÊ±µ÷ÓÃ
-		void do_in(int fd);//ÓĞ¿É¶ÁÊÂ¼ş·¢ÉúÊ±
-		void do_close(int fd);//¶Ï¿ªÁ´½Ó
+		int wait_event();//ç›‘å¬ä¸€æ¬¡æ‰€æœ‰å¥—æ¥å£
+		void do_accept();//æœ‰æ–°è¿æ¥è¿›å…¥æ—¶è°ƒç”¨
+		void do_in(int fd);//æœ‰å¯è¯»äº‹ä»¶å‘ç”Ÿæ—¶
+		void do_close(int fd);//æ–­å¼€é“¾æ¥
 	public:
-		/*void do_out(int fd);//ÓĞ¿ÉĞ´ÊÂ¼ş·¢ÉúÊ±*/
+		/*void do_out(int fd);//æœ‰å¯å†™äº‹ä»¶å‘ç”Ÿæ—¶*/
 
-	private://±¨ÎÄ´¦Àíº¯Êı
-		unsigned int readline(int fd, char* buf, size_t len); //¶ÁÈ¡Ò»ĞĞ,·µ»ØÖµÎª¶ÁÈ¡×Ö·û¸öÊı£¬Á´½Ó¶Ï¿ªÔò·µ»Ø0
-		unsigned int writeline(int fd, const char* buf, size_t len);//Ğ´Ò»ĞĞ,Ğ´µ½\r\n½áÊø£¬·µ»ØÖµ²»ÊÇÕıÊıÔò³ö´í
-		unsigned int readn(int fd, char* buf, size_t len);//¶ÁÈ¡len¸ö×Ö·û,0Ôò±íÊ¾¶Ï¿ªÁ´½Ó
-		unsigned int writen(int fd, const char* buf, size_t len);//Ğ´Èëlen¸ö×Ö·û,·µ»ØÖµ²»ÎªÕıÊıÔò³ö´í
+	private://æŠ¥æ–‡å¤„ç†å‡½æ•°
+		unsigned int readline(int fd, char* buf, size_t len); //è¯»å–ä¸€è¡Œ,è¿”å›å€¼ä¸ºè¯»å–å­—ç¬¦ä¸ªæ•°ï¼Œé“¾æ¥æ–­å¼€åˆ™è¿”å›0
+		unsigned int writeline(int fd, const char* buf, size_t len);//å†™ä¸€è¡Œ,å†™åˆ°\r\nç»“æŸï¼Œè¿”å›å€¼ä¸æ˜¯æ­£æ•°åˆ™å‡ºé”™
+		unsigned int readn(int fd, char* buf, size_t len);//è¯»å–lenä¸ªå­—ç¬¦,0åˆ™è¡¨ç¤ºæ–­å¼€é“¾æ¥
+		unsigned int writen(int fd, const char* buf, size_t len);//å†™å…¥lenä¸ªå­—ç¬¦,è¿”å›å€¼ä¸ä¸ºæ­£æ•°åˆ™å‡ºé”™
 		void upchar(char* buf, size_t len);
 		void downchar(char* buf, size_t len);
 		void do_get(int fd, const char* uri, size_t len);
 		void do_post(int fd, const char* uri, size_t urilen, const char* text, size_t textlen);
 		unsigned long get_file_size(const char* path);
-	private://Ë½ÓÃ·½·¨
+	private://ç§ç”¨æ–¹æ³•
 		void do_conf(const char*filename);
-		void Bind(int sockfd, struct sockaddr_in* addr);//³õÊ¼»¯¹¤×÷
-		void Listen(int sockfd, unsigned int num);//³õÊ¼»¯¹¤×÷
-		void add_event(int fd, int state);//Ìí¼ÓÒ»¸öÊÂ¼şµ½epoll
+		void Bind(int sockfd, struct sockaddr_in* addr);//åˆå§‹åŒ–å·¥ä½œ
+		void Listen(int sockfd, unsigned int num);//åˆå§‹åŒ–å·¥ä½œ
+		void add_event(int fd, int state);//æ·»åŠ ä¸€ä¸ªäº‹ä»¶åˆ°epoll
 		void delete_event(int fd, int state);
 		void modify_event(int fd, int state);
-	private://Êı¾İ
-		int m_listenfd;//¼àÌıÌ×½Ó×Ö
-		struct sockaddr_in my_addr;//¼àÌıÌ×½Ó×ÖµÄµØÖ·½á¹¹
+	private://æ•°æ®
+		int m_listenfd;//ç›‘å¬å¥—æ¥å­—
+		struct sockaddr_in my_addr;//ç›‘å¬å¥—æ¥å­—çš„åœ°å€ç»“æ„
 		int epoll_fd;
-		socklen_t addr_len;//µØÖ·³¤¶È
+		socklen_t addr_len;//åœ°å€é•¿åº¦
 	
-		char confpath[1024];//Ä¬ÈÏÂ·¾¶ÅäÖÃ
+		char confpath[1024];//é»˜è®¤è·¯å¾„é…ç½®
 		
-		list<int> m_connfd;//ÒÑÁ¬½ÓÌ×½Ó×Ö¶ÓÁĞ
-		vector<struct epoll_event> m_epoll_event;//´ı´¦ÀíÊÂ¼ş¶ÓÁĞ
+		list<int> m_connfd;//å·²è¿æ¥å¥—æ¥å­—é˜Ÿåˆ—
+		vector<struct epoll_event> m_epoll_event;//å¾…å¤„ç†äº‹ä»¶é˜Ÿåˆ—
 };
 
 
@@ -89,13 +89,13 @@ do_write()
 
 do_work()
 {
-	//¶Á
-	//½âÎöÄÚÈİ
-	//´æ´¢
+	//è¯»
+	//è§£æå†…å®¹
+	//å­˜å‚¨
 }
 
 work_end()
 {
-	//Ê¹ÓÃ´æ´¢
-	//·¢ËÍÏàÓ¦ÄÚÈİ
+	//ä½¿ç”¨å­˜å‚¨
+	//å‘é€ç›¸åº”å†…å®¹
 }*/
