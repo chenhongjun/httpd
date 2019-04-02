@@ -52,7 +52,7 @@ Ser::Ser(const char* ip, unsigned int port)
 	
 	struct epoll_event one;
 	bzero(&one, sizeof(one));
-	m_epoll_event.push_back(one);
+	m_epoll_event.resize(1024, one);
 }
 
 void Ser::Bind(int sockfd, struct sockaddr_in* addr)
@@ -69,7 +69,7 @@ void Ser::Listen(int sockfd, unsigned int num)
 
 int  Ser::wait_event()
 {
-	int ret = epoll_wait(epoll_fd, &*m_epoll_event.begin(), m_epoll_event.size()+1, -1);
+	int ret = epoll_wait(epoll_fd, &*m_epoll_event.begin(), m_epoll_event.size(), -1);
 	if (ret < 0)
 	{
 		ERR_EXIT("epoll_wait");;
@@ -276,7 +276,7 @@ void Ser::do_conf(const char* filename)
 
 void Ser::go()
 {
-	do_conf("./.httpd.conf");//从配置文� 加载配置项
+	do_conf("./.httpd.conf");//从配置文件加载配置项
 	//cout << "confpath:" << confpath << endl;
 	while (1)
 	{
