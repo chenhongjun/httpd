@@ -11,7 +11,7 @@ Ser::Ser()
 	bzero(&my_addr, addr_len);
 	
 	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(80);
+	my_addr.sin_port = htons(SER_PORT);
 	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	
 	Bind(m_listenfd, &my_addr);
@@ -22,6 +22,7 @@ Ser::Ser()
 	add_event(m_listenfd, EPOLLIN);
 	
 	struct epoll_event one;
+	bzero(&one, sizeof(one));
 	m_epoll_event.push_back(one);
 }
 
