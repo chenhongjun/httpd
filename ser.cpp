@@ -2,28 +2,8 @@
 
 Ser::Ser()
 {
-	if ((m_listenfd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
-	  ERR_EXIT("socket");
-	int on = 1;
-	if (setsockopt(m_listenfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) < 0)
-		ERR_EXIT("setsockopt");
-	addr_len = sizeof(my_addr);
-	bzero(&my_addr, addr_len);
-	
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(SER_PORT);
-	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	
-	Bind(m_listenfd, &my_addr);
-	Listen(m_listenfd, LISTENQ);
-	
-	if ((epoll_fd = epoll_create1(0)) < 0)
-	  ERR_EXIT("epoll_create1");
-	add_event(m_listenfd, EPOLLIN);
-	
-	struct epoll_event one;
-	bzero(&one, sizeof(one));
-	m_epoll_event.push_back(one);
+	//INADDR_ANY 0.0.0.0
+	Ser("0.0.0.0", SER_PORT);
 }
 
 Ser::Ser(const char* ip, unsigned int port)
@@ -53,7 +33,7 @@ Ser::Ser(const char* ip, unsigned int port)
 	
 	struct epoll_event one;
 	bzero(&one, sizeof(one));
-	m_epoll_event.resize(1024, one);
+	m_epoll_event.push_back(one);
 }
 
 void Ser::Bind(int sockfd, struct sockaddr_in* addr)
@@ -301,7 +281,7 @@ void Ser::go()
 				//thread out(do_out, fd);
 				do_out(fd);*/
 		}
-		//适当减小事件处理容器
+		//由于连接关闭。当连接数大于100，且容器大于连接数的2倍时，适当减小事件处理容器
 		size_t sizelist = m_connfd.size();
 		size_t sizearr = m_epoll_event.size()/2;
 		if ((sizelist > 100) && (sizearr > sizelist))
