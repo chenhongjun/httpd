@@ -3,7 +3,32 @@
 Ser::Ser()
 {
 	//INADDR_ANY 0.0.0.0
-	Ser("0.0.0.0", SER_PORT);
+	//Ser("0.0.0.0", SER_PORT);
+	if ((m_listenfd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+	  ERR_EXIT("socket");
+	
+	int on = 1;
+     if (setsockopt(m_listenfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on)) <     0)
+         ERR_EXIT("setsockopt");
+
+
+	addr_len = sizeof(my_addr);
+	bzero(&my_addr, addr_len);
+	
+	my_addr.sin_family = AF_INET;
+	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	my_addr.sin_port = htons(SER_PORT);
+
+	Bind(m_listenfd, &my_addr);
+	Listen(m_listenfd, LISTENQ);
+
+	if ((epoll_fd = epoll_create1(0)) < 0)
+	  ERR_EXIT("epoll_create1");
+	add_event(m_listenfd, EPOLLIN);
+	
+	struct epoll_event one;
+	bzero(&one, sizeof(one));
+	m_epoll_event.push_back(one);
 }
 
 Ser::Ser(const char* ip, unsigned int port)
@@ -21,7 +46,7 @@ Ser::Ser(const char* ip, unsigned int port)
 	
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(port);
-	if (inet_pton(AF_INET, ip, &my_addr) < 0)
+	if (inet_pton(AF_INET, ip, &my_addr.sin_addr) < 0)
 	  ERR_EXIT("inet_pton");
 
 	Bind(m_listenfd, &my_addr);
@@ -50,7 +75,7 @@ void Ser::Listen(int sockfd, unsigned int num)
 
 int  Ser::wait_event()
 {
-	int ret = epoll_wait(epoll_fd, &*m_epoll_event.begin(), m_epoll_event.size(), -1);
+	int ret = epoll_wait(epoll_fd, &m_epoll_event[0], m_epoll_event.size(), -1);
 	if (ret < 0)
 	{
 		ERR_EXIT("epoll_wait");;
@@ -285,7 +310,7 @@ void Ser::go()
 		size_t sizelist = m_connfd.size();
 		size_t sizearr = m_epoll_event.size()/2;
 		if ((sizelist > 100) && (sizearr > sizelist))
-			m_epoll_event.resize(sizearr);
+			;//m_epoll_event.resize(sizearr);
 	}
 }
 
