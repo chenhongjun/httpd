@@ -36,11 +36,11 @@ class Ser {
 		void modify_event(int fd, int state);
 	private://数据
 		int m_listenfd;//监听套接字
-		struct sockaddr_in my_addr;//监听套接字的地址结构
-		int epoll_fd;
-		socklen_t addr_len;//地址长度
+		struct sockaddr_in m_local_addr;//监听套接字的地址结构
+		int m_epoll_fd;
+		socklen_t m_addr_len;//地址长度
 	
-		char confpath[1024];//默认路径配置
+		char m_confpath[1024];//默认路径配置
 		
 		list<int> m_connfd;//已连接套接字队列
 		vector<struct epoll_event> m_epoll_event;//待处理事件队列

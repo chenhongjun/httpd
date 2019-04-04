@@ -12,17 +12,17 @@ Ser::Ser()
          ERR_EXIT("setsockopt");
 
 
-	addr_len = sizeof(my_addr);
-	bzero(&my_addr, addr_len);
+	m_addr_len = sizeof(m_local_addr);
+	bzero(&m_local_addr, m_addr_len);
 	
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-	my_addr.sin_port = htons(SER_PORT);
+	m_local_addr.sin_family = AF_INET;
+	m_local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	m_local_addr.sin_port = htons(SER_PORT);
 
-	Bind(m_listenfd, &my_addr);
+	Bind(m_listenfd, &m_local_addr);
 	Listen(m_listenfd, LISTENQ);
 
-	if ((epoll_fd = epoll_create1(0)) < 0)
+	if ((m_epoll_fd = epoll_create1(0)) < 0)
 	  ERR_EXIT("epoll_create1");
 	add_event(m_listenfd, EPOLLIN);
 	
@@ -41,18 +41,18 @@ Ser::Ser(const char* ip, unsigned int port)
          ERR_EXIT("setsockopt");
 
 
-	addr_len = sizeof(my_addr);
-	bzero(&my_addr, addr_len);
+	m_addr_len = sizeof(m_local_addr);
+	bzero(&m_local_addr, m_addr_len);
 	
-	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(port);
-	if (inet_pton(AF_INET, ip, &my_addr.sin_addr) < 0)
+	m_local_addr.sin_family = AF_INET;
+	m_local_addr.sin_port = htons(port);
+	if (inet_pton(AF_INET, ip, &m_local_addr.sin_addr) < 0)
 	  ERR_EXIT("inet_pton");
 
-	Bind(m_listenfd, &my_addr);
+	Bind(m_listenfd, &m_local_addr);
 	Listen(m_listenfd, LISTENQ);
 
-	if ((epoll_fd = epoll_create1(0)) < 0)
+	if ((m_epoll_fd = epoll_create1(0)) < 0)
 	  ERR_EXIT("epoll_create1");
 	add_event(m_listenfd, EPOLLIN);
 	
@@ -63,7 +63,7 @@ Ser::Ser(const char* ip, unsigned int port)
 
 void Ser::Bind(int sockfd, struct sockaddr_in* addr)
 {
-	if (bind(sockfd, (SA*)addr, addr_len) < 0)
+	if (bind(sockfd, (SA*)addr, m_addr_len) < 0)
 		ERR_EXIT("bind");
 }
 
@@ -75,7 +75,7 @@ void Ser::Listen(int sockfd, unsigned int num)
 
 int  Ser::wait_event()
 {
-	int ret = epoll_wait(epoll_fd, &m_epoll_event[0], m_epoll_event.size(), -1);
+	int ret = epoll_wait(m_epoll_fd, &m_epoll_event[0], m_epoll_event.size(), -1);
 	if (ret < 0)
 	{
 		ERR_EXIT("epoll_wait");;
@@ -88,21 +88,21 @@ void Ser::add_event(int fd, int state)
 	struct epoll_event ev;
 	ev.events = state;
 	ev.data.fd = fd;
-	epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &ev);	
+	epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, fd, &ev);	
 }
 void Ser::delete_event(int fd, int state)
 {
 	struct epoll_event ev;
 	ev.events = state;
 	ev.data.fd = fd;
-	epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, &ev);
+	epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, fd, &ev);
 }
 void Ser::modify_event(int fd, int state)
 {
 	struct epoll_event ev;
 	ev.events = state;
 	ev.data.fd = fd;
-	epoll_ctl(epoll_fd, EPOLL_CTL_MOD, fd, &ev);
+	epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, fd, &ev);
 }
 
 void Ser::do_accept()
@@ -229,6 +229,11 @@ void Ser::do_in(int fd)
 		do_post(fd, uri, sizeof(uri), ptext, textlen+1);//解析数据并完成发送任务
 		delete[] ptext;
 	}
+	else
+	{
+		cout << "Further Support." << endl;
+		return;
+	}
 	return;
 }
 
@@ -248,7 +253,7 @@ void Ser::do_close(int fd)
 
 void Ser::do_conf(const char* filename)
 {
-	bzero(confpath, sizeof(confpath));
+	bzero(m_confpath, sizeof(m_confpath));
 	FILE* pconf = fopen(filename, "rb");
 	char line[1024] = {0};
 	while (fgets(line, sizeof(line), pconf) != NULL)
@@ -267,12 +272,12 @@ void Ser::do_conf(const char* filename)
 		//cout << key << path << endl;
 		if (strcmp(key, "PATH") == 0)
 		{
-			strncpy(confpath, path, sizeof(path));
-			if (confpath[strlen(confpath)-1] == '/')//去掉后缀/
+			strncpy(m_confpath, path, sizeof(path));
+			if (m_confpath[strlen(m_confpath)-1] == '/')//去掉后缀/
 			{
-				confpath[strlen(confpath)-1] = '\0';
+				m_confpath[strlen(m_confpath)-1] = '\0';
 			}
-			//cout << confpath << endl;
+			//cout << m_confpath << endl;
 		}
 		
 	}
@@ -282,7 +287,7 @@ void Ser::do_conf(const char* filename)
 void Ser::go()
 {
 	do_conf("./.httpd.conf");//从配置文件加载配置项
-	//cout << "confpath:" << confpath << endl;
+	//cout << "m_confpath:" << m_confpath << endl;
 	while (1)
 	{
 		int num = wait_event();
@@ -419,10 +424,9 @@ void Ser::do_get(int fd, const char* uri, size_t len)
 	//cout << "do_get" << endl;
 	//静态文件则发送文件
 	char filepath[1024] = {0};
-	snprintf(filepath, sizeof(filepath), "%s%s", confpath, uri);
+	snprintf(filepath, sizeof(filepath), "%s%s", m_confpath, uri);
 	if (filepath[strlen(filepath)-1] == '/')
-	  strcat(filepath, "demo.html");
-	else return;
+	  strcat(filepath, "index.html");
 	//cout << filepath << endl;
 	if (!writeline(fd, "HTTP/1.1 200 OK\r\n", sizeof("HTTP/1.1 200 OK\r\n")))
 	{
@@ -449,6 +453,7 @@ void Ser::do_get(int fd, const char* uri, size_t len)
 		return;
 	}
 	//cout << "begin send file:" << filesize << endl;
+	if (filesize <= 0) return;
 	FILE* pfile = fopen(filepath, "rb");
 	char buf[4096] = {0};
 	int ret = 0;
@@ -469,7 +474,6 @@ void Ser::do_get(int fd, const char* uri, size_t len)
 			do_close(fd);
 			return;
 		}
-		
 	}
 	//动态请求则执行程序并发送输出
 }
