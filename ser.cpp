@@ -108,6 +108,12 @@ void Ser::modify_event(int fd, int state)
 void Ser::do_accept()
 {
 	int fd = accept(m_listenfd, nullptr, nullptr);
+	if (fd == -1)
+	{
+		cerr << "accept" << endl;
+		return;
+	}
+	cout << "new fd:" << fd << endl;
 	/*
 	struct sockaddr_in addr;
 	socklen_t len = sizeof(addr);
@@ -126,13 +132,6 @@ void Ser::do_accept()
 	getpeername(fd, (SA*)&addr, &len);
 	cout << inet_ntoa(addr.sin_addr) << ":" << ntohs(addr.sin_port) << endl;
 	//*/
-	
-	if (fd == -1)
-	{
-		cerr << "accept" << endl;
-		return;
-	}
-	cout << "new fd:" << fd << endl;
 
 	m_connfd.push_back(fd);//添加到已连接队列
 	add_event(fd, EPOLLIN);//添加到epoll监听
@@ -295,12 +294,12 @@ void Ser::go()
 			if ((fd == m_listenfd) && (event & EPOLLIN))
 			{
 				do_accept();
-				//thread(&Ser::do_accept, *this).detach();//启动分离的无名线程处理新连接
+				//thread(&Ser::do_accept, this).detach();//启动分离的无名线程处理新连接
 			}
 			else if (event & EPOLLIN)
 			{
 				do_in(fd);
-				//thread(&Ser::do_in, *this, fd).detach();//启动线程处理此请求事件
+				//thread(&Ser::do_in, this, fd).detach();//启动线程处理此请求事件
 			}
 			/*else if (event & EPOLLOUT)
 				//thread out(do_out, fd);
@@ -310,7 +309,7 @@ void Ser::go()
 		size_t sizelist = m_connfd.size();
 		size_t sizearr = m_epoll_event.size()/2;
 		if ((sizelist > 100) && (sizearr > sizelist))
-			;//m_epoll_event.resize(sizearr);
+			m_epoll_event.resize(sizearr);
 	}
 }
 
