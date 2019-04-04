@@ -26,7 +26,7 @@ class Ser {
 		void downchar(char* buf, size_t len);
 		void do_get(int fd, const char* uri, size_t len);
 		void do_post(int fd, const char* uri, size_t urilen, const char* text, size_t textlen);
-		unsigned long get_file_size(const char* path);
+		long get_file_size(const char* path);
 	private://私用方法
 		void do_conf(const char*filename);
 		void Bind(int sockfd, struct sockaddr_in* addr);//初始化工作

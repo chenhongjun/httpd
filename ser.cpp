@@ -407,14 +407,13 @@ void Ser::downchar(char* buf, size_t len)
 	for (size_t i = 0; i < len; ++i)
 	  *(buf+i) = tolower(*(buf+i));
 }
-unsigned long Ser::get_file_size(const char* path)
+long Ser::get_file_size(const char* path)
 {
-	unsigned long sizefile = -1;
+	long sizefile = -1;
 	struct stat statbuf;
 	if (stat(path, &statbuf) < 0)
 	  return sizefile;
-	else
-	  sizefile = statbuf.st_size;
+	sizefile = statbuf.st_size;
 	return sizefile;
 }
 
@@ -439,7 +438,7 @@ void Ser::do_get(int fd, const char* uri, size_t len)
 		do_close(fd);
 		return;
 	}
-	unsigned long filesize = get_file_size(filepath);
+	long filesize = get_file_size(filepath);
 	char contentlength_buf[128] = {0};
 	sprintf(contentlength_buf, "content-length: %lu\r\n", filesize);
 	if (writeline(fd, contentlength_buf, sizeof(contentlength_buf)) == 0)
