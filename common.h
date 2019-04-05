@@ -41,7 +41,7 @@ using namespace std;
 
 //宏函数
 #define ERR_EXIT(str) do {\
-		cerr << str << endl;\
+		cerr << str << " errno:" << errno << endl;\
 		exit(-1);\
 } while (0)
 //重命名结构体
