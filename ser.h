@@ -1,5 +1,9 @@
 #include "common.h"
-
+//TODO
+//将IO函数提出到单独模块
+//将网络部分提出，内部使用线程，封装成异步IO接口,写也改为非堵塞
+//将业务部分独立
+//考虑跨平台
 
 class Ser {
 		//friend void do_accept(Ser& ser);//有新连接进入时调用
